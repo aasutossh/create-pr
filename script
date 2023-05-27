@@ -1,0 +1,53 @@
+#!/bin/bash
+
+# Define the target branches
+target_branches=("dev" "UAT" "PRE-PROD" "main")
+
+# Define the branch labels
+branch_labels=("Dev" "UAT" "PRE-PROD" "Production")
+
+# Get the current branch name
+current_branch=$(git rev-parse --abbrev-ref HEAD)
+
+pr_links=()
+
+# Function to create a pull request
+create_pull_request() {
+  local branch=$1
+  local title=$2
+  local label=$3
+  local response=$(gh api -X POST repos/:owner/:repo/pulls \
+      -F base="$branch" \
+      -F head="$current_branch" \
+      -F title="$title" \
+      -F labels="$label" \
+      2>/dev/null) # Redirect stderr to null
+
+  # Check if the pull request creation was successful
+  local error_message=$(echo "$response" | jq -r '.errors[0].message')
+  if [ "$error_message" != "null" ]; then
+    echo "$label: $error_message"
+  else
+    local pr_url=$(echo "$response" | jq -r '.html_url')
+    pr_links+=("$label: $pr_url")
+  fi
+}
+
+# Prompt for the pull request title
+read -p "Enter the pull request title: " pr_title
+
+# Iterate over target branches
+for ((i=0; i<${#target_branches[@]}; i++)); do
+  branch=${target_branches[$i]}
+  label=${branch_labels[$i]}
+  # Create pull request with label
+  create_pull_request "$branch" "$pr_title" "$label"
+done
+
+if [[ ${#pr_links[@]} -gt 0 ]]; then
+  echo "Pull Request Links:"
+  for ((i=0; i<${#pr_links[@]}; i++)); do
+    link=${pr_links[$i]}
+    echo "$link"
+  done
+fi
