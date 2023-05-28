@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Define the target branches
-target_branches=("dev" "UAT" "PRE-PROD" "main")
+target_branches=("dev" "UAT" "PRE-PROD" "master")
 
 # Define the branch labels
 branch_labels=("Dev" "UAT" "PRE-PROD" "Production")
